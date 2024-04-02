@@ -1,10 +1,11 @@
 import { db } from '../firebase';
-import { addDoc, collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import mailService from './mail-service';
 import tokenService from './token-service';
 import { UserDto } from '../dtos/user-dto';
+import { ApiError } from '../exceptions/api-error';
 
 const usersRef = collection(db, 'users');
 
@@ -15,8 +16,9 @@ class UserService {
     const candidate = (await getDocs(candidates)).docs.length;
 
     if (candidate) {
-      throw new Error(`Пользователь с почтовым адресом ${email} уже существует`);
+      throw ApiError.BadRequest(`Пользователь с почтовым адресом ${email} уже существует`);
     }
+
     const hashPassword = await bcrypt.hash(password, 3);
     const activationLink = uuidv4();
     const userId = (await addDoc(usersRef, { email, password: hashPassword, activationLink, isActivated: false })).id;
@@ -30,6 +32,17 @@ class UserService {
       ...tokens,
       user: userDto,
     };
+  }
+
+  public async activate(activationLink: string) {
+    const users = query(usersRef, where('activationLink', '==', activationLink));
+    const userId = (await getDocs(users)).docs[0].id;
+
+    if (!userId) {
+      throw ApiError.BadRequest('Некорректная ссылка активации');
+    }
+    const docRef = doc(usersRef, userId);
+    await updateDoc(docRef, { isActivated: true });
   }
 
 }
