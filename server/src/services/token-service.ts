@@ -1,5 +1,5 @@
 import { IUserDto } from '../dtos/user-dto';
-import { addDoc, collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { db } from '../firebase';
 
@@ -28,6 +28,17 @@ class TokenService {
     const token = await addDoc(tokensRef, { user: userId, refreshToken });
     return token;
   }
+
+  public async removeToken(refreshToken: string) {
+    const tokensData = query(tokensRef, where('refreshToken', '==', refreshToken));
+    const tokenData = (await getDocs(tokensData)).docs[0].data();
+    return tokenData;
+  }
+
+  // public async findToken(refreshToken: string) {
+  //   const tokenData = await tokenModel.findOne({ refreshToken });
+  //   return tokenData;
+  // }
 
 }
 

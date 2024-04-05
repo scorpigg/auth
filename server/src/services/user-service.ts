@@ -45,6 +45,37 @@ class UserService {
     await updateDoc(docRef, { isActivated: true });
   }
 
+  public async login(email: string, password: string) {
+    const users = query(usersRef, where('email', '==', email));
+    const userRef = (await getDocs(users)).docs[0];
+
+    if (!userRef) {
+      throw ApiError.BadRequest('Пользователь не был найден');
+    }
+
+    const user = userRef.data();
+    const userId = userRef.id;
+
+    const isPassEquals = await bcrypt.compare(password, user.password);
+    if (!isPassEquals) {
+      throw ApiError.BadRequest('Неверный пароль');
+    }
+
+    const userDto = new UserDto({ email: user.email, id: userId, isActivated: user.isActivated });
+    const tokens = tokenService.generateTokens({ ...userDto });
+    await tokenService.saveToken(userDto.id, tokens.refreshToken);
+
+    return {
+      ...tokens,
+      user: userDto,
+    };
+  }
+
+  public async loguot(refreshToken: string) {
+    const token = await tokenService.removeToken(refreshToken);
+    return token;
+  }
+
 }
 
 export default new UserService();
