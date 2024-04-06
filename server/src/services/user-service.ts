@@ -97,6 +97,10 @@ class UserService {
     };
   }
 
+  public async getAllUsers() {
+    return (await getDocs(usersRef)).docs.map(doc => doc.data());
+  }
+
 }
 
 export default new UserService();
