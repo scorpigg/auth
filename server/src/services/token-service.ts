@@ -1,5 +1,5 @@
 import { IUserDto } from '../dtos/user-dto';
-import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { db } from '../firebase';
 
@@ -17,12 +17,15 @@ class TokenService {
   }
 
   public async saveToken(userId: string, refreshToken: string) {
-    const docRef = doc(tokensRef, userId);
-    const tokenData = (await getDoc(docRef)).data();
+    const tokens = query(tokensRef, where('user', '==', userId));
+    const tokenRef = (await getDocs(tokens)).docs[0];
 
-    if (tokenData) {
+    if (tokenRef) {
+      const tokenData = tokenRef.data();
+      const tokenId = tokenRef.id;
       tokenData.refreshToken = refreshToken;
-      return await updateDoc(docRef, tokenData);
+      const token = doc(tokensRef, tokenId);
+      return await updateDoc(token, tokenData);
     }
 
     const token = await addDoc(tokensRef, { user: userId, refreshToken });
@@ -30,8 +33,11 @@ class TokenService {
   }
 
   public async removeToken(refreshToken: string) {
-    const tokensData = query(tokensRef, where('refreshToken', '==', refreshToken));
-    const tokenData = (await getDocs(tokensData)).docs[0].data();
+    const tokens = query(tokensRef, where('refreshToken', '==', refreshToken));
+    const tokenRef = (await getDocs(tokens)).docs[0];
+    const tokenData = tokenRef.data();
+    const tokenId = tokenRef.id;
+    await deleteDoc(doc(tokensRef, tokenId));
     return tokenData;
   }
 
