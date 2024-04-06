@@ -1,6 +1,6 @@
 import { IUserDto } from '../dtos/user-dto';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import jwt from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 import { db } from '../firebase';
 
 const tokensRef = collection(db, 'tokens');
@@ -41,10 +41,29 @@ class TokenService {
     return tokenData;
   }
 
-  // public async findToken(refreshToken: string) {
-  //   const tokenData = await tokenModel.findOne({ refreshToken });
-  //   return tokenData;
-  // }
+  public validateAccessToken(token: string) {
+    try {
+      const userData = jwt.verify(token, process.env.JWT_ACCESS_SECRET) as JwtPayload;
+      return userData;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  public validateRefreshToken(token: string) {
+    try {
+      const userData = jwt.verify(token, process.env.JWT_REFRESH_SECRET) as JwtPayload;
+      return userData;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  public async findToken(refreshToken: string) {
+    const tokens = query(tokensRef, where('refreshToken', '==', refreshToken));
+    const tokenData = (await getDocs(tokens)).docs[0].data();
+    return tokenData;
+  }
 
 }
 

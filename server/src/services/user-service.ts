@@ -73,7 +73,28 @@ class UserService {
 
   public async loguot(refreshToken: string) {
     const token = await tokenService.removeToken(refreshToken);
+    const userData = tokenService.validateRefreshToken(refreshToken);
+    console.log('userData', userData);
     return token;
+  }
+
+  public async refresh(refreshToken: string) {
+    if (!refreshToken) {
+      throw ApiError.UnauthorizedError();
+    }
+    const userData = tokenService.validateRefreshToken(refreshToken);
+    const tokenFromDb = await tokenService.findToken(refreshToken);
+    if (!userData || !tokenFromDb) {
+      throw ApiError.UnauthorizedError();
+    }
+    const user = (await getDoc(doc(usersRef, userData.id))).data();
+    const userDto = new UserDto({ email: user.email, id: userData.id, isActivated: user.isActivated });
+    const tokens = tokenService.generateTokens({ ...userDto });
+    await tokenService.saveToken(userDto.id, tokens.refreshToken);
+    return {
+      ...tokens,
+      user: userDto,
+    };
   }
 
 }
