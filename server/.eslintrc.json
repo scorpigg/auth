@@ -18,8 +18,8 @@
   "rules": {
     "no-tabs": ["error", { "allowIndentationTabs": true }],
     "semi": ["error", "always"],
-    "@typescript-eslint/indent": ["error", 2],
-    "@typescript-eslint/no-use-before-define": ["error"],
+    "@typescript-eslint/indent": ["error", 2,{ "SwitchCase": 1 }],
+    "@typescript-eslint/no-use-before-define": "error",
     "comma-spacing": ["error", { "before": false, "after": true }],
     "semi-spacing": ["error", { "before": false, "after": true }],
     "no-multi-spaces": "error",
